@@ -25,7 +25,6 @@ dependencies {
     implementation lib.sitb_spring_data_mongo
 
     implementation lib.aomi_common_bs
-    implementation lib.aomi_common_utils
 
     testCompile lib._test
 }
