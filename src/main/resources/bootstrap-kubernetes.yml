@@ -1,0 +1,60 @@
+k8s:
+  namespace: assets-server
+
+server:
+  tomcat:
+    remote-ip-header: X-Forwarded-For
+    protocol-header: X-Forwarded-Proto
+    internal-proxies: ".*"
+
+logging:
+  file:
+    max-size: 30MB
+    max-history: 0
+  level:
+    org:
+      springframework: debug
+    software: debug
+    tech:
+      aomi: debug
+  pattern:
+    console: "%clr(%d){blue} [%clr(%-5level){lightgreen}] [%logger{0}] - %msg%n"
+    file: "%d [%-5level] [%logger{0}] - %msg%n"
+
+spring:
+  application:
+    name: core
+  main:
+    allow-bean-definition-overriding: true
+  # Http 配置
+  servlet:
+    multipart:
+      enabled: true
+      file-size-threshold: 1MB
+      max-file-size: 50MB
+      max-request-size: 50MB
+      location: ${core.rootDir}
+  resources:
+    static-locations: "file://${core.rootDir}"
+  jackson:
+    default-property-inclusion: NON_NULL
+    serialization:
+      ORDER_MAP_ENTRIES_BY_KEYS: true
+      WRITE_DATES_AS_TIMESTAMPS: true
+    mapper:
+      SORT_PROPERTIES_ALPHABETICALLY: true
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      config:
+        sources:
+          - namespace: ${k8s.namespace}
+            name: mongodb
+          - namespace: ${k8s.namespace}
+            name: logging
+          - namespace: ${k8s.namespace}
+            name: core
+
+core:
+  rootDir: /application/files

@@ -1,0 +1,31 @@
+plugins {
+    id "io.franzbecker.gradle-lombok" version "2.2"
+    id 'org.springframework.boot' version '2.2.6.RELEASE' apply false
+}
+
+group 'tech.aomi.assets'
+version '1.0.0'
+
+apply from: 'https://onegit.com/oneuser/public/raw/master/libraries.gradle'
+apply from: 'https://onegit.com/enterprise/public/raw/master/libraries.gradle'
+apply from: 'https://onegit.com/enterprise/public/raw/master/java.gradle'
+apply from: 'https://onegit.com/enterprise/public/raw/master/idea.gradle'
+apply from: 'https://onegit.com/enterprise/public/raw/master/bundle-spring-boot-app.gradle'
+
+repositories {
+    maven { url "${project.'owner.repo'}" }
+    maven { url "${project.'repo'}" }
+    jcenter()
+}
+
+dependencies {
+    implementation lib.spring_boot_web
+    implementation lib.spring_boot_data_mongodb
+
+    implementation lib.sitb_spring_data_mongo
+
+    implementation lib.aomi_common_bs
+    implementation lib.aomi_common_utils
+
+    testCompile lib._test
+}
