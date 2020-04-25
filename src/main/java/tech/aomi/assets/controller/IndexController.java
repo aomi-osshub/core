@@ -1,29 +1,28 @@
 package tech.aomi.assets.controller;
 
-import jdk.nashorn.internal.objects.annotations.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
 import org.springframework.data.domain.Pageable;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import tech.aomi.assets.CoreProperties;
 import tech.aomi.assets.api.AssetsServices;
+import tech.aomi.assets.common.exception.FileNonExistException;
 import tech.aomi.assets.entity.Assets;
 import tech.aomi.common.exception.ErrorCode;
 import tech.aomi.common.web.controller.AbstractController;
 import tech.aomi.common.web.controller.Result;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 /**
  * @author Sean Create At 2020/4/25
  */
 @Slf4j
-@RestController
+@Controller
 public class IndexController extends AbstractController {
 
     @Autowired
@@ -35,6 +34,21 @@ public class IndexController extends AbstractController {
     @GetMapping("/")
     public Result showAll(String platform, String userId, Pageable pageable) {
         return success(assetsServices.query(platform, userId, pageable));
+    }
+
+    @GetMapping("/{id}")
+    public String showOne(@PathVariable String id) throws UnsupportedEncodingException {
+        LOGGER.debug("获取文件: {}", id);
+        File dir = new File(properties.getLocation() + File.separator + id);
+        if (!dir.exists()) {
+            LOGGER.error("文件不存在: {}", id);
+            throw new FileNonExistException(id);
+        }
+        File[] files = dir.listFiles();
+        if (null != files && files.length > 0) {
+            return "redirect:" + id + File.separator + URLEncoder.encode(files[0].getName(), "UTF-8");
+        }
+        throw new FileNonExistException(id);
     }
 
     @PostMapping("/")
