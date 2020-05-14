@@ -5,7 +5,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.web.servlet.MultipartProperties;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import tech.aomi.assets.api.AssetsServices;
 import tech.aomi.assets.common.exception.FileNonExistException;
@@ -46,7 +49,7 @@ public class IndexController extends AbstractController {
         }
         File[] files = dir.listFiles();
         if (null != files && files.length > 0) {
-            return "redirect:" + id + File.separator + URLEncoder.encode(files[0].getName(), "UTF-8");
+            return "forward:" + id + File.separator + URLEncoder.encode(files[0].getName(), "UTF-8");
         }
         throw new FileNonExistException(id);
     }
