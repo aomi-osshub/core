@@ -1,5 +1,5 @@
 k8s:
-  namespace: assets-server
+  namespace: default
 
 server:
   tomcat:
