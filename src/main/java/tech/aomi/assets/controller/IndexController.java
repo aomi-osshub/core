@@ -34,10 +34,10 @@ public class IndexController extends AbstractController {
     @Autowired
     private MultipartProperties properties;
 
-    @GetMapping("/")
-    public Result showAll(String platform, String userId, Pageable pageable) {
-        return success(assetsServices.query(platform, userId, pageable));
-    }
+//    @GetMapping("/")
+//    public Result showAll(String platform, String userId, Pageable pageable) {
+//        return success(assetsServices.query(platform, userId, pageable));
+//    }
 
     @GetMapping("/{id}")
     public String showOne(@PathVariable String id) throws UnsupportedEncodingException {
