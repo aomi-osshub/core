@@ -1,31 +1,44 @@
 plugins {
     id "io.franzbecker.gradle-lombok" version "2.2"
-    id 'org.springframework.boot' version '2.2.6.RELEASE' apply false
+    id "org.springframework.boot" version "2.4.6" apply false
+    id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 }
 
 group 'tech.aomi.assets'
 version '1.0.0'
 
-apply from: 'https://onegit.com/oneuser/public/raw/master/libraries.gradle'
 apply from: 'https://onegit.com/enterprise/public/raw/master/libraries.gradle'
+apply from: 'https://onegit.com/enterprise/public/raw/master/spring-libraries.gradle'
+
 apply from: 'https://onegit.com/enterprise/public/raw/master/java.gradle'
 apply from: 'https://onegit.com/enterprise/public/raw/master/idea.gradle'
-apply from: 'https://onegit.com/enterprise/public/raw/master/bundle-spring-boot-app.gradle'
+apply from: 'https://onegit.com/enterprise/public/raw/master/spring-boot-app-build-image.gradle'
 
 repositories {
-    maven { url "${project.'owner.repo'}" }
     maven { url "${project.'repo'}" }
-    jcenter()
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom 'org.springframework.boot:spring-boot-dependencies:2.4.6'
+        mavenBom 'org.springframework.cloud:spring-cloud-dependencies:2020.0.3'
+    }
 }
 
 dependencies {
-    implementation lib.spring_boot_web
-    implementation lib.spring_boot_data_mongodb
+    implementation spring_boot.web
+    implementation spring_boot.data_mongodb
 
     implementation lib.sitb_spring_data_mongo
 
-    implementation lib.aomi_common_bs
-    implementation lib.commons_lang3
+    implementation 'tech.aomi.common:web:1.0.5-Alpha.2'
 
-    testCompile lib._test
+    implementation 'tech.aomi.common:entity:1.0.3-Alpha.7'
+    implementation 'tech.aomi.common:exception:1.0.0'
+
+//    implementation lib.aomi_common_bs
+//    implementation lib.commons_lang3
+
+    testImplementation lib._test
 }
