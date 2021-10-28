@@ -1,23 +1,15 @@
 server:
   port: 5001
-  tomcat:
-    remote-ip-header: X-Forwarded-For
-    protocol-header: X-Forwarded-Proto
-    internal-proxies: ".*"
 
 logging:
-  file:
-    max-size: 30MB
-    max-history: 0
   level:
     org:
       springframework: debug
-    software: debug
     tech:
       aomi: debug
   pattern:
-    console: "%clr(%d){blue} [%clr(%-5level){lightgreen}] [%logger{0}] - %msg%n"
-    file: "%d [%-5level] [%logger{0}] - %msg%n"
+    console: "[%X{logId}] %clr(%d){blue} [%clr(%-5level){lightgreen}] [%logger{0}] - %msg%n"
+    file: "[%X{logId}] %d [%-5level] [%logger{0}] - %msg%n"
 
 spring:
   application:
@@ -32,8 +24,9 @@ spring:
       max-file-size: 50MB
       max-request-size: 50MB
       location: ${core.rootDir}
-  resources:
-    static-locations: "file://${core.rootDir}"
+  web:
+    resources:
+      static-locations: "file://${core.rootDir}"
   jackson:
     default-property-inclusion: NON_NULL
     serialization:
@@ -43,12 +36,13 @@ spring:
       SORT_PROPERTIES_ALPHABETICALLY: true
   data:
     mongodb:
-      host: 101.132.108.155
-      port: 30000
-      username: dev
-      password: dev.com
-      database: acquiring
-      authentication-database: acquiring
+      host: 101.133.132.174
+      port: 31768
+      authentication-database: filexplorer
+      database: filexplorer
+      username: prod
+      password: joyqxZN5iL84k8q
+      auto-index-creation: true
 
 core:
-  rootDir: /Users/Sean/tmp
+  rootDir: fileRoot

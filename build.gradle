@@ -1,11 +1,11 @@
 plugins {
     id "io.franzbecker.gradle-lombok" version "2.2"
-    id "org.springframework.boot" version "2.4.6" apply false
+    id "org.springframework.boot" version "2.5.6" apply false
     id 'io.spring.dependency-management' version '1.0.11.RELEASE'
 }
 
-group 'tech.aomi.assets'
-version '1.0.0'
+group 'tech.aomi.osshub'
+version '2.0.0'
 
 apply from: 'https://onegit.com/enterprise/public/raw/master/libraries.gradle'
 apply from: 'https://onegit.com/enterprise/public/raw/master/spring-libraries.gradle'
@@ -21,24 +21,36 @@ repositories {
 
 dependencyManagement {
     imports {
-        mavenBom 'org.springframework.boot:spring-boot-dependencies:2.4.6'
-        mavenBom 'org.springframework.cloud:spring-cloud-dependencies:2020.0.3'
+        mavenBom 'org.springframework.boot:spring-boot-dependencies:2.5.6'
+        mavenBom 'org.springframework.cloud:spring-cloud-dependencies:2020.0.4'
     }
 }
 
 dependencies {
     implementation spring_boot.web
+    implementation spring_boot.validation
+    implementation spring_boot.security
+
     implementation spring_boot.data_mongodb
 
-    implementation lib.sitb_spring_data_mongo
+    modules {
+        module("org.springframework.boot:spring-boot-starter-tomcat") {
+            replacedBy("org.springframework.boot:spring-boot-starter-undertow", "Use Undertow instead of Tomcat")
+        }
+    }
 
-    implementation 'tech.aomi.common:web:1.0.5-Alpha.2'
+    implementation lib.commons_lang3
+    implementation lib.commons_io
 
-    implementation 'tech.aomi.common:entity:1.0.3-Alpha.7'
-    implementation 'tech.aomi.common:exception:1.0.0'
+    implementation 'tech.aomi.common:web:1.0.5-Alpha.4'
+    implementation 'tech.aomi.common:web-security:1.0.7-Alpha.0'
 
-//    implementation lib.aomi_common_bs
-//    implementation lib.commons_lang3
+    implementation 'tech.aomi.common:entity:1.0.3-Alpha.12'
+    implementation "tech.aomi.common:exception:1.0.1-Alpha.0"
+    implementation 'tech.aomi.common:utils:1.0.13'
+
+    implementation 'tech.aomi.spring.data:mongo:1.0.0'
+
 
     testImplementation lib._test
 }
