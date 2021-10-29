@@ -7,8 +7,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import tech.aomi.common.constant.HttpHeader;
 import tech.aomi.common.utils.json.Json;
-import tech.aomi.filexplorer.form.TokenForm;
-import tech.aomi.filexplorer.util.HmacUtil;
+import tech.aomi.osshub.form.TokenForm;
+import tech.aomi.osshub.util.HmacUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
