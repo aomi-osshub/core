@@ -42,7 +42,7 @@ dependencies {
     implementation lib.commons_lang3
     implementation lib.commons_io
 
-    implementation 'tech.aomi.common:web:1.0.5-Alpha.4'
+    implementation 'tech.aomi.common:web:1.0.5-Alpha.6'
     implementation 'tech.aomi.common:web-security:1.0.7-Alpha.0'
 
     implementation 'tech.aomi.common:entity:1.0.3-Alpha.12'

@@ -26,7 +26,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author Sean createAt 2021/10/21
@@ -40,6 +42,16 @@ public class VirtualFileServiceImpl implements VirtualFileService {
 
     @Autowired
     private VirtualFileRepository virtualFileRepository;
+
+    @Override
+    public Optional<VirtualFile> findById(String id) {
+        return virtualFileRepository.findById(id);
+    }
+
+    @Override
+    public List<VirtualFile> query(String clientId, String directory) {
+        return virtualFileRepository.findByClientIdAndDirectory(clientId, directory);
+    }
 
     @Override
     public VirtualFile createDirectory(Client client, String userId, String parent, String name) {
@@ -180,10 +192,18 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         for (int i = 1; file.exists() && i < Integer.MAX_VALUE; i++) {
             file = new File(fileDir, toPrefix + '(' + i + ')' + toSuffix);
         }
-        LOGGER.debug("文件路径: {}", file.getAbsolutePath());
         virtualFile.setName(file.getName());
         try {
             FileUtils.copyInputStreamToFile(fileInputStream, file);
+
+            File root = new File(properties.getRootDir());
+            String rootAbsolutePath = root.getAbsolutePath();
+            String fileAbsolutePath = file.getAbsolutePath();
+
+            String storageSource = fileAbsolutePath.replace(rootAbsolutePath, "");
+            virtualFile.setStorageSource(storageSource);
+
+            LOGGER.debug("文件路径: {}", file.getAbsolutePath());
         } catch (IOException e) {
             LOGGER.error("文件保存失败： {}", e.getMessage(), e);
             throw new FileCreateException("文件创建失败", e);

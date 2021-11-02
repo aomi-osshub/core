@@ -4,11 +4,18 @@ import tech.aomi.osshub.entity.Client;
 import tech.aomi.osshub.entity.VirtualFile;
 
 import java.io.InputStream;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Sean createAt 2021/10/21
  */
 public interface VirtualFileService {
+
+
+    Optional<VirtualFile> findById(String id);
+
+    List<VirtualFile> query(String clientId, String directory);
 
     /**
      * 文件夹创建
