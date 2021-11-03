@@ -7,7 +7,6 @@ import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import tech.aomi.common.exception.ServiceException;
 import tech.aomi.osshub.CoreProperties;
 import tech.aomi.osshub.api.VirtualFileService;
@@ -16,7 +15,6 @@ import tech.aomi.osshub.common.exception.DirExistException;
 import tech.aomi.osshub.common.exception.DirNonExistException;
 import tech.aomi.osshub.common.exception.FileCreateException;
 import tech.aomi.osshub.entity.Client;
-import tech.aomi.osshub.entity.FileSystemStorageParams;
 import tech.aomi.osshub.entity.StorageType;
 import tech.aomi.osshub.entity.VirtualFile;
 import tech.aomi.osshub.repositry.VirtualFileRepository;
@@ -27,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -96,14 +93,6 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         virtualFile.setClientId(client.getId());
         virtualFile.setUserId(userId);
         virtualFile.setStorageType(storageType);
-
-        switch (storageType) {
-            case FILE_SYSTEM:
-                saveDirectoryFileSystem(virtualFile, client);
-                break;
-            default:
-                throw new ServiceException("不支持的存储方式: " + storageType);
-        }
         virtualFile.setFullName(parentDirectory + ("/".equals(parentDirectory) ? "" : File.separator) + name);
         return virtualFileRepository.save(virtualFile);
     }
@@ -126,6 +115,11 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         virtualFile.setCreateAt(new Date());
         virtualFile.setStorageType(storageType);
         virtualFile.setClientId(client.getId());
+        String directory = StringUtils.trimToEmpty(virtualFile.getDirectory());
+        if ("".equals(directory)) {
+            directory = "/";
+        }
+        virtualFile.setDirectory(directory);
 
         switch (storageType) {
             case FILE_SYSTEM:
@@ -138,65 +132,44 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         return virtualFileRepository.save(virtualFile);
     }
 
-    private void saveDirectoryFileSystem(VirtualFile virtualFile, Client client) {
-        File userRoot = userRootDir(client, virtualFile.getUserId());
-
-        String parentDirPath = userRoot.getAbsolutePath() + (virtualFile.getDirectory().startsWith("/") ? "" : File.separator) + virtualFile.getDirectory();
-        File parentDirFile = new File(parentDirPath);
-        if (!parentDirFile.exists() || parentDirFile.isFile()) {
-            boolean parentCreate = parentDirFile.mkdirs();
-            LOGGER.debug("父目录不存在，自动创建: {}, {}", parentDirPath, parentCreate);
-        }
-
-        String dirPath = parentDirPath + File.separator + virtualFile.getName();
-        File dir = new File(dirPath);
-        if (dir.exists() && dir.isDirectory()) {
-            LOGGER.error("目录已经存在: {}", dirPath);
-            throw new DirExistException("目录已经存在:" + virtualFile.getName());
-        }
-
-        if (!dir.mkdir()) {
-            throw new DirCreateException("目录创建失败: " + virtualFile.getName());
-        }
-    }
+//    private void saveDirectoryFileSystem(VirtualFile virtualFile, Client client) {
+//        File userRoot = userRootDir(client, virtualFile.getUserId());
+//
+//        String parentDirPath = userRoot.getAbsolutePath() + (virtualFile.getDirectory().startsWith("/") ? "" : File.separator) + virtualFile.getDirectory();
+//        File parentDirFile = new File(parentDirPath);
+//        if (!parentDirFile.exists() || parentDirFile.isFile()) {
+//            boolean parentCreate = parentDirFile.mkdirs();
+//            LOGGER.debug("父目录不存在，自动创建: {}, {}", parentDirPath, parentCreate);
+//        }
+//
+//        String dirPath = parentDirPath + File.separator + virtualFile.getName();
+//        File dir = new File(dirPath);
+//        if (dir.exists() && dir.isDirectory()) {
+//            LOGGER.error("目录已经存在: {}", dirPath);
+//            throw new DirExistException("目录已经存在:" + virtualFile.getName());
+//        }
+//
+//        if (!dir.mkdir()) {
+//            throw new DirCreateException("目录创建失败: " + virtualFile.getName());
+//        }
+//    }
 
     private void saveFileSystem(VirtualFile virtualFile, InputStream fileInputStream, Client client) {
+        File root = clientRootDir(client);
 
-        File userRoot = userRootDir(client, virtualFile.getUserId());
-
-        String directory = StringUtils.trimToEmpty(virtualFile.getDirectory());
-        if ("".equals(directory)) {
-            directory = "/";
-        }
-        virtualFile.setDirectory(directory);
-
-        String fileDirPath = userRoot.getAbsolutePath() + (directory.startsWith("/") ? "" : File.separator) + directory;
+        String fileDirPath = root.getAbsolutePath() + File.separator + virtualFile.getId();
         LOGGER.debug("文件目录: {}", fileDirPath);
         File fileDir = new File(fileDirPath);
-        if (!fileDir.exists() || fileDir.isFile()) {
-            LOGGER.error("文件上传指定的目录不存在: {}", fileDirPath);
-            throw new DirNonExistException("文件上传的目录不存在");
+        if (!fileDir.mkdir()) {
+            LOGGER.error("文件上传目录不存在: {}", fileDirPath);
+            throw new DirCreateException("文件目录创建失败");
         }
 
-        int index = virtualFile.getName().lastIndexOf(".");
-        String toPrefix = "";
-        String toSuffix = "";
-        if (index == -1) {
-            toPrefix = virtualFile.getName();
-        } else {
-            toPrefix = virtualFile.getName().substring(0, index);
-            toSuffix = virtualFile.getName().substring(index);
-        }
+        File file = new File(fileDir, virtualFile.getName());
 
-        File file = new File(fileDir, toPrefix + toSuffix);
-        for (int i = 1; file.exists() && i < Integer.MAX_VALUE; i++) {
-            file = new File(fileDir, toPrefix + '(' + i + ')' + toSuffix);
-        }
-        virtualFile.setName(file.getName());
         try {
             FileUtils.copyInputStreamToFile(fileInputStream, file);
 
-            File root = new File(properties.getRootDir());
             String rootAbsolutePath = root.getAbsolutePath();
             String fileAbsolutePath = file.getAbsolutePath();
 
@@ -211,34 +184,18 @@ public class VirtualFileServiceImpl implements VirtualFileService {
 
     }
 
-    private File userRootDir(Client client, String userId) {
-        Map<String, Object> params = client.getStorageParams();
-        if (CollectionUtils.isEmpty(params) || StringUtils.isEmpty((CharSequence) params.get(FileSystemStorageParams.ROOT_DIR_KEY))) {
-            throw new ServiceException("客户端未配置存储路径信息");
-        }
-        String clientRootDir = (String) params.get(FileSystemStorageParams.ROOT_DIR_KEY);
-        String rootDirPath = properties.getRootDir() + File.separator + clientRootDir;
+    private File clientRootDir(Client client) {
+        String rootDirPath = properties.getRootDir() + File.separator + client.getId();
         LOGGER.debug("客户端根目录: {}", rootDirPath);
         File rootDir = new File(rootDirPath);
         if (!rootDir.exists() && !rootDir.mkdirs()) {
             LOGGER.error("客户端根目录创建失败: {}", rootDirPath);
-            throw new DirCreateException("客户端根目录创建失败:" + File.separator + clientRootDir);
+            throw new DirCreateException("客户端根目录创建失败:" + File.separator + client.getId());
         } else if (rootDir.isFile() && !rootDir.mkdirs()) {
             LOGGER.error("客户端根目录创建失败: {}", rootDirPath);
-            throw new DirCreateException("客户端根目录创建失败:" + File.separator + clientRootDir);
+            throw new DirCreateException("客户端根目录创建失败:" + File.separator + client.getId());
         }
 
-        String userDirPath = rootDirPath + File.separator + userId;
-        LOGGER.debug("用户目录: {}", userDirPath);
-        File userDir = new File(userDirPath);
-        if (!userDir.exists() && !userDir.mkdirs()) {
-            LOGGER.error("用户录创建失败: {}", rootDirPath);
-            throw new DirCreateException("用户录创建失败:" + File.separator + userDirPath);
-        } else if (userDir.isFile() && !userDir.mkdirs()) {
-            LOGGER.error("用户录创建失败: {}", rootDirPath);
-            throw new DirCreateException("用户录创建失败:" + File.separator + userDirPath);
-        }
-
-        return userDir;
+        return rootDir;
     }
 }
