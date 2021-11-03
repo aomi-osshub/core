@@ -57,3 +57,5 @@ activemq-data
 .#*
 *#
 generated
+
+application-local.yml

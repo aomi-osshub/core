@@ -21,12 +21,14 @@ spring:
     multipart:
       enabled: true
       file-size-threshold: 1MB
-      max-file-size: 50MB
-      max-request-size: 50MB
+      max-file-size: 5000MB
+      max-request-size: 5000MB
       location: ${core.rootDir}
   web:
     resources:
       static-locations: "file://${core.rootDir}"
+  mvc:
+    static-path-pattern: /assets/**
   jackson:
     default-property-inclusion: NON_NULL
     serialization:
@@ -41,8 +43,7 @@ spring:
       authentication-database: filexplorer
       database: filexplorer
       username: prod
-      password: joyqxZN5iL84k8q
       auto-index-creation: true
 
 core:
-  rootDir: fileRoot
+  rootDir: /Users/Sean/workspaces/assets-server/core/fileRoot
