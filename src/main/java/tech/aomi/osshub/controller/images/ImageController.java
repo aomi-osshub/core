@@ -31,9 +31,9 @@ public class ImageController extends AbstractController {
     @PostMapping
     public Result upload(
             @RequestParam MultipartFile file,
-            String directory,
+            @RequestParam(defaultValue = "/") String directory,
             String groupId,
-            String userId,
+            @RequestParam String userId,
             @RequestParam(defaultValue = "700") String mode,
             @RequestParam(defaultValue = "NONE") String labelType
     ) throws IOException {

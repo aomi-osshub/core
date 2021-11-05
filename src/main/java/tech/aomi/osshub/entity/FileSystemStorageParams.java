@@ -5,5 +5,9 @@ package tech.aomi.osshub.entity;
  */
 public class FileSystemStorageParams {
 
+    /**
+     * 存储根目录地址
+     */
+    public static final String ROOT_DIR_KEY = "rootDir";
 
 }

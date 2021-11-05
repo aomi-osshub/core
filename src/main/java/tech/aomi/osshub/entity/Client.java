@@ -2,6 +2,7 @@ package tech.aomi.osshub.entity;
 
 import lombok.Getter;
 import lombok.Setter;
+import tech.aomi.common.entity.LabelEntity;
 
 import java.util.Date;
 import java.util.Map;
@@ -14,7 +15,7 @@ import java.util.Set;
  */
 @Getter
 @Setter
-public class Client implements java.io.Serializable {
+public class Client implements java.io.Serializable, LabelEntity {
 
     private static final long serialVersionUID = -1170529289239704415L;
 
@@ -35,9 +36,10 @@ public class Client implements java.io.Serializable {
     private StorageType storageType;
 
     /**
-     * 存储方式对应的参数
+     * 客户端对应的标签信息
+     * 用于存储其他参数
      */
-    private Map<String, Object> storageParams;
+    private Map<String, Object> labels;
 
     /**
      * 权限信息

@@ -77,6 +77,11 @@ public class VirtualFile implements java.io.Serializable, LabelEntity {
     private String storageSource;
 
     /**
+     * 访问源
+     */
+    private String accessSource;
+
+    /**
      * 创建时间
      */
     private Date createAt;
