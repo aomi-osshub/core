@@ -1,11 +1,5 @@
 k8s:
-  namespace: assets-server
-
-server:
-  tomcat:
-    remote-ip-header: X-Forwarded-For
-    protocol-header: X-Forwarded-Proto
-    internal-proxies: ".*"
+  namespace: osshub
 
 logging:
   file:
@@ -13,13 +7,12 @@ logging:
     max-history: 0
   level:
     org:
-      springframework: debug
-    software: debug
+      springframework: error
     tech:
       aomi: debug
   pattern:
-    console: "%clr(%d){blue} [%clr(%-5level){lightgreen}] [%logger{0}] - %msg%n"
-    file: "%d [%-5level] [%logger{0}] - %msg%n"
+    console: "[%X{logId}] %clr(%d){blue} [%clr(%-5level){lightgreen}] [%logger{0}] - %msg%n"
+    file: "[%X{logId}] %d [%-5level] [%logger{0}] - %msg%n"
 
 spring:
   application:
@@ -31,11 +24,8 @@ spring:
     multipart:
       enabled: true
       file-size-threshold: 1MB
-      max-file-size: 50MB
-      max-request-size: 50MB
-      location: ${core.rootDir}
-  resources:
-    static-locations: "file://${core.rootDir}"
+      max-file-size: 100MB
+      max-request-size: 100MB
   jackson:
     default-property-inclusion: NON_NULL
     serialization:
@@ -49,6 +39,8 @@ spring:
         enabled: true
       config:
         sources:
+          - namespace: ${k8s.namespace}
+            name: application
           - namespace: ${k8s.namespace}
             name: mongodb
           - namespace: ${k8s.namespace}
