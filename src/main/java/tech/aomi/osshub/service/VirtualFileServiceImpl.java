@@ -5,12 +5,19 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import tech.aomi.common.exception.ServiceException;
 import tech.aomi.osshub.CoreProperties;
 import tech.aomi.osshub.api.VirtualFileService;
-import tech.aomi.osshub.common.exception.*;
+import tech.aomi.osshub.common.exception.DirCreateException;
+import tech.aomi.osshub.common.exception.DirExistException;
+import tech.aomi.osshub.common.exception.DirNonExistException;
+import tech.aomi.osshub.common.exception.FileCreateException;
 import tech.aomi.osshub.entity.Client;
 import tech.aomi.osshub.entity.FileSystemStorageParams;
 import tech.aomi.osshub.entity.StorageType;
@@ -39,9 +46,18 @@ public class VirtualFileServiceImpl implements VirtualFileService {
     @Autowired
     private VirtualFileRepository virtualFileRepository;
 
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
     @Override
-    public Optional<VirtualFile> findById(String id) {
-        return virtualFileRepository.findById(id);
+    public Optional<VirtualFile> visit(String id) {
+        VirtualFile file = mongoTemplate.findAndModify(
+                new Query(Criteria.where("id").is(id)),
+                new Update().inc("visits", 1L)
+                        .set("lastVisitAt", new Date()),
+                VirtualFile.class
+        );
+        return Optional.ofNullable(file);
     }
 
     @Override

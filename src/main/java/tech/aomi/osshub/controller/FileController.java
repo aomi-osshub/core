@@ -54,7 +54,7 @@ public class FileController extends AbstractController {
             HttpServletRequest request,
             HttpServletResponse response
     ) throws IOException, ServletException {
-        VirtualFile virtualFile = virtualFileService.findById(id).orElseThrow(() -> new FileNonExistException("文件不存在"));
+        VirtualFile virtualFile = virtualFileService.visit(id).orElseThrow(() -> new FileNonExistException("文件不存在"));
 
         StorageType storageType = virtualFile.getStorageType();
 

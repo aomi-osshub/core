@@ -13,7 +13,12 @@ import java.util.Optional;
 public interface VirtualFileService {
 
 
-    Optional<VirtualFile> findById(String id);
+    /**
+     * 访问文件
+     *
+     * @param id 文件id
+     */
+    Optional<VirtualFile> visit(String id);
 
     List<VirtualFile> query(String clientId, String directory);
 

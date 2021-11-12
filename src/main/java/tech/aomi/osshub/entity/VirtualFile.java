@@ -82,6 +82,16 @@ public class VirtualFile implements java.io.Serializable, LabelEntity {
     private String accessSource;
 
     /**
+     * 访问次数
+     */
+    private Long visits;
+
+    /**
+     * 最后一次访问时间
+     */
+    private Date lastVisitAt;
+
+    /**
      * 创建时间
      */
     private Date createAt;
