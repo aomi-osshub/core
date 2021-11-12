@@ -113,17 +113,17 @@ public class VirtualFileServiceImpl implements VirtualFileService {
             directory = "/";
         }
 
-        if (virtualFileRepository.existsByTypeAndClientIdAndUserIdAndDirectoryAndName(
-                VirtualFile.Type.FILE,
-                client.getId(),
-                virtualFile.getUserId(),
-                directory,
-                virtualFile.getName()
-        )) {
-            FileExistException e = new FileExistException("文件已经存在: " + virtualFile.getName());
-            e.setPayload(virtualFile.getName());
-            throw e;
-        }
+//        if (virtualFileRepository.existsByTypeAndClientIdAndUserIdAndDirectoryAndName(
+//                VirtualFile.Type.FILE,
+//                client.getId(),
+//                virtualFile.getUserId(),
+//                directory,
+//                virtualFile.getName()
+//        )) {
+//            FileExistException e = new FileExistException("文件已经存在: " + virtualFile.getName());
+//            e.setPayload(virtualFile.getName());
+//            throw e;
+//        }
 
         StorageType storageType = client.getStorageType();
         if (null == storageType) {
