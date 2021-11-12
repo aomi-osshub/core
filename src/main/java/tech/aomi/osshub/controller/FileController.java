@@ -3,11 +3,8 @@ package tech.aomi.osshub.controller;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import tech.aomi.common.exception.ServiceException;
 import tech.aomi.common.web.controller.Result;
 import tech.aomi.osshub.CoreProperties;
@@ -21,9 +18,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -95,6 +90,33 @@ public class FileController extends AbstractController {
         LOGGER.debug("文件夹创建: {}", form);
         VirtualFile file = virtualFileService.createDirectory(client(), form.getUserId(), form.getParent(), form.getName());
         return success(file);
+    }
+
+    /**
+     * 图片上传
+     */
+    @PostMapping
+    public Result upload(
+            @RequestParam MultipartFile file,
+            @RequestParam(defaultValue = "/") String directory,
+            String groupId,
+            @RequestParam String userId,
+            @RequestParam(defaultValue = "700") String mode
+    ) throws IOException {
+
+        VirtualFile virtualFile = new VirtualFile();
+        virtualFile.setType(VirtualFile.Type.FILE);
+        virtualFile.setDirectory(directory);
+        virtualFile.setName(file.getOriginalFilename());
+        virtualFile.setSize(file.getSize());
+        virtualFile.setMode(mode);
+
+        virtualFile.setGroupId(groupId);
+        virtualFile.setUserId(userId);
+
+        virtualFile = virtualFileService.save(client(), virtualFile, file.getInputStream());
+
+        return success(virtualFile);
     }
 
 }
