@@ -118,6 +118,7 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
             registry.antMatchers(HttpMethod.GET, webMvcProperties.getStaticPathPattern()).permitAll();
         }
         registry.antMatchers(HttpMethod.POST, "/tokens").permitAll();
+        registry.antMatchers(HttpMethod.GET, "/files/*/*").permitAll();
 
         registry.anyRequest().authenticated();
     }
