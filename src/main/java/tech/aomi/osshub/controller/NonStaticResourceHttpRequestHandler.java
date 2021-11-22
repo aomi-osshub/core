@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.connector.ClientAbortException;
 import org.springframework.core.io.FileUrlResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.CacheControl;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.resource.ResourceHttpRequestHandler;
 
@@ -13,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+import java.time.Duration;
 
 /**
  * 动态资源处理
@@ -24,6 +26,10 @@ import java.nio.file.Path;
 public class NonStaticResourceHttpRequestHandler extends ResourceHttpRequestHandler {
 
     public final static String ATTR_FILE = "NON-STATIC-FILE";
+
+    public NonStaticResourceHttpRequestHandler() {
+        setCacheControl(CacheControl.maxAge(Duration.ofDays(30)));
+    }
 
     @Override
     protected Resource getResource(HttpServletRequest request) throws MalformedURLException {
