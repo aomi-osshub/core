@@ -65,7 +65,7 @@ public class FileController extends AbstractController {
                 String path = properties.getRootDir() + File.separator + virtualFile.getStorageSource();
                 filePath = Paths.get(path);
                 if (!Files.exists(filePath)) {
-                    throw new FileNonExistException("文件不存在");
+                    throw new FileNonExistException("文件不存在:" + virtualFile.getName());
                 }
                 break;
             }
