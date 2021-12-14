@@ -38,8 +38,6 @@ spring:
       SORT_PROPERTIES_ALPHABETICALLY: true
   data:
     mongodb:
-      host: 101.133.132.174
-      port: 31768
       authentication-database: filexplorer
       database: filexplorer
       username: prod
