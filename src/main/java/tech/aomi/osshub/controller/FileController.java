@@ -29,6 +29,7 @@ import java.util.List;
  * @author Sean createAt 2021/10/26
  */
 @Slf4j
+@CrossOrigin
 @RestController
 @RequestMapping("/files")
 public class FileController extends AbstractController {

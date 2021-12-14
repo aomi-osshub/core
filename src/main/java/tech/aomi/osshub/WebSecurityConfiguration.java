@@ -1,6 +1,5 @@
 package tech.aomi.osshub;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.web.servlet.WebMvcProperties;
 import org.springframework.context.annotation.Bean;
@@ -80,6 +79,8 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
 //                .addFilterBefore(filterSecurityInterceptor, FilterSecurityInterceptor.class)
                 .addFilterAfter(new TokenAuthenticationFilter(), BasicAuthenticationFilter.class)
                 .csrf().disable()
+                .cors()
+                .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.NEVER)
                 .and()
                 .antMatcher("/**")
@@ -114,9 +115,6 @@ public class WebSecurityConfiguration extends WebSecurityConfigurerAdapter {
             registry.antMatchers(permission.getMethod(), permission.getAntPatterns()).hasAnyAuthority(authorities);
         });
 
-        if (StringUtils.isNotEmpty(webMvcProperties.getStaticPathPattern()) && !"/".equals(webMvcProperties.getStaticPathPattern())) {
-            registry.antMatchers(HttpMethod.GET, webMvcProperties.getStaticPathPattern()).permitAll();
-        }
         registry.antMatchers(HttpMethod.POST, "/tokens").permitAll();
         registry.antMatchers(HttpMethod.GET, "/files/*/*").permitAll();
 
