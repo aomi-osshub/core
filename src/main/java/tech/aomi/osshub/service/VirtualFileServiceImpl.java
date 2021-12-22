@@ -263,7 +263,7 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         String fileDirPath = clientDir.getAbsolutePath() + File.separator + virtualFile.getId();
         LOGGER.debug("文件目录: {}", fileDirPath);
         File fileDir = new File(fileDirPath);
-        if (!fileDir.mkdir()) {
+        if (!fileDir.exists() && !fileDir.mkdir()) {
             LOGGER.error("文件目录创建失败: {}", fileDirPath);
             throw new DirCreateException("文件目录创建失败");
         }
