@@ -197,11 +197,11 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         File clientDir = getClientFile(client);
         if (file.getType() == VirtualFile.Type.FILE) {
             File fileDir = getFileDir(clientDir, file);
-            boolean success = fileDir.delete();
-            if (success) {
+            try {
+                FileUtils.deleteDirectory(fileDir);
                 virtualFileRepository.deleteById(file.getId());
-            } else {
-                LOGGER.warn("文件删除失败: id={} name={}", file.getId(), file.getName());
+            } catch (IOException e) {
+                LOGGER.warn("文件删除失败: id={} name={} message={}", file.getId(), file.getName(), e.getMessage());
             }
             return;
         }
@@ -214,8 +214,9 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         allSubFiles.parallelStream()
                 .forEach(item -> {
                     File fileDir = getFileDir(clientDir, file);
-                    boolean success = fileDir.delete();
-                    if (!success) {
+                    try {
+                        FileUtils.deleteDirectory(fileDir);
+                    } catch (Exception e) {
                         LOGGER.warn("文件删除失败: id={} name={}", file.getId(), file.getName());
                     }
                 });
