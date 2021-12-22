@@ -29,7 +29,6 @@ import java.util.List;
  * @author Sean createAt 2021/10/26
  */
 @Slf4j
-@CrossOrigin
 @RestController
 @RequestMapping("/files")
 public class FileController extends AbstractController {
@@ -119,5 +118,13 @@ public class FileController extends AbstractController {
 
         return success(virtualFile);
     }
+
+    @DeleteMapping
+    public Result del(@RequestBody List<String> ids) {
+        LOGGER.debug("删除文件: {}", ids);
+        virtualFileService.del(client(), ids);
+        return success();
+    }
+
 
 }

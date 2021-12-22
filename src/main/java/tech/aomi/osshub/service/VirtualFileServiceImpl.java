@@ -165,36 +165,15 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         return virtualFileRepository.save(virtualFile);
     }
 
+    @Override
+    public void del(Client client, List<String> ids) {
+        Iterable<VirtualFile> files = virtualFileRepository.findAllById(ids);
+        files.forEach(file -> this.del(client, file));
+    }
+
     private void saveWithFileSystem(VirtualFile virtualFile, InputStream fileInputStream, Client client) {
-        String rootDirPath = properties.getRootDir();
-        LOGGER.debug("根目录: {}", rootDirPath);
-        File rootDir = new File(rootDirPath);
-        if (!rootDir.exists()) {
-            LOGGER.error("根目录不存在: {}", rootDirPath);
-            throw new DirNonExistException("根目录不存在");
-        }
-
-        // 客户端配置存储路径是为了多个客户端共享一个存储目录
-        String clientPath = (String) client.getLabel(FileSystemStorageParams.ROOT_DIR_KEY);
-        if (null == clientPath) {
-            throw new ServiceException("客户端未配置存储目录");
-        }
-
-        String clientDirPath = rootDirPath + File.separator + clientPath;
-        File clientDir = new File(clientDirPath);
-        if (!clientDir.exists() && !clientDir.mkdir()) {
-            LOGGER.error("客户端存储目录创建失败: {}", clientDirPath);
-            throw new DirCreateException("客户端存储目录创建失败:" + clientPath);
-        }
-
-        String fileDirPath = clientDir.getAbsolutePath() + File.separator + virtualFile.getId();
-        LOGGER.debug("文件目录: {}", fileDirPath);
-        File fileDir = new File(fileDirPath);
-        if (!fileDir.mkdir()) {
-            LOGGER.error("文件目录创建失败: {}", fileDirPath);
-            throw new DirCreateException("文件目录创建失败");
-        }
-
+        File rootDir = getRootFile();
+        File fileDir = getFileDir(client, virtualFile);
         File file = new File(fileDir, virtualFile.getName());
 
         try {
@@ -212,6 +191,83 @@ public class VirtualFileServiceImpl implements VirtualFileService {
             throw new FileCreateException("文件创建失败", e);
         }
 
+    }
+
+    private void del(Client client, VirtualFile file) {
+        File clientDir = getClientFile(client);
+        if (file.getType() == VirtualFile.Type.FILE) {
+            File fileDir = getFileDir(clientDir, file);
+            boolean success = fileDir.delete();
+            if (success) {
+                virtualFileRepository.deleteById(file.getId());
+            } else {
+                LOGGER.warn("文件删除失败: id={} name={}", file.getId(), file.getName());
+            }
+            return;
+        }
+
+        List<VirtualFile> allSubFiles = virtualFileRepository.findByClientIdAndDirectoryIsStartingWith(
+                client.getId(),
+                file.getDirectory() + file.getName()
+        );
+
+        allSubFiles.parallelStream()
+                .forEach(item -> {
+                    File fileDir = getFileDir(clientDir, file);
+                    boolean success = fileDir.delete();
+                    if (!success) {
+                        LOGGER.warn("文件删除失败: id={} name={}", file.getId(), file.getName());
+                    }
+                });
+
+        virtualFileRepository.deleteAll(allSubFiles);
+    }
+
+
+    private File getRootFile() {
+        String rootDirPath = properties.getRootDir();
+        LOGGER.debug("根目录: {}", rootDirPath);
+        File rootDir = new File(rootDirPath);
+        if (!rootDir.exists()) {
+            LOGGER.error("根目录不存在: {}", rootDirPath);
+            throw new DirNonExistException("根目录不存在");
+        }
+        return rootDir;
+    }
+
+
+    private File getClientFile(Client client) {
+        File rootDir = getRootFile();
+
+        // 客户端配置存储路径是为了多个客户端共享一个存储目录
+        String clientPath = (String) client.getLabel(FileSystemStorageParams.ROOT_DIR_KEY);
+        if (null == clientPath) {
+            throw new ServiceException("客户端未配置存储目录");
+        }
+
+        String clientDirPath = rootDir.getAbsolutePath() + File.separator + clientPath;
+        File clientDir = new File(clientDirPath);
+        if (!clientDir.exists() && !clientDir.mkdir()) {
+            LOGGER.error("客户端存储目录创建失败: {}", clientDirPath);
+            throw new DirCreateException("客户端存储目录创建失败:" + clientPath);
+        }
+        return clientDir;
+    }
+
+    private File getFileDir(Client client, VirtualFile virtualFile) {
+        File clientDir = getClientFile(client);
+        return getFileDir(clientDir, virtualFile);
+    }
+
+    private File getFileDir(File clientDir, VirtualFile virtualFile) {
+        String fileDirPath = clientDir.getAbsolutePath() + File.separator + virtualFile.getId();
+        LOGGER.debug("文件目录: {}", fileDirPath);
+        File fileDir = new File(fileDirPath);
+        if (!fileDir.mkdir()) {
+            LOGGER.error("文件目录创建失败: {}", fileDirPath);
+            throw new DirCreateException("文件目录创建失败");
+        }
+        return fileDir;
     }
 
 }

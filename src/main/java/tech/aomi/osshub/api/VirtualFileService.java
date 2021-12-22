@@ -42,4 +42,10 @@ public interface VirtualFileService {
     VirtualFile save(Client client, VirtualFile virtualFile, InputStream fileInputStream);
 
 
+    /**
+     * 删除文件夹
+     *
+     * @param ids 删除的文件IDS
+     */
+    void del(Client client, List<String> ids);
 }

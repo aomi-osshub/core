@@ -28,4 +28,13 @@ public interface VirtualFileRepository extends MongoRepository<VirtualFile, Stri
     Optional<VirtualFile> findByClientIdAndId(String clientId, String id);
 
     List<VirtualFile> findByClientIdAndDirectory(String clientId, String directory);
+
+    /**
+     * 查询指定目录下的所有子文件
+     *
+     * @param clientId  客户端ID
+     * @param directory 当前目录
+     * @return 所有子目录
+     */
+    List<VirtualFile> findByClientIdAndDirectoryIsStartingWith(String clientId, String directory);
 }
