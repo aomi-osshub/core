@@ -217,7 +217,7 @@ public class VirtualFileServiceImpl implements VirtualFileService {
                     try {
                         FileUtils.deleteDirectory(fileDir);
                     } catch (Exception e) {
-                        LOGGER.warn("文件删除失败: id={} name={}", file.getId(), file.getName());
+                        LOGGER.warn("文件删除失败: id={} name={}", file.getId(), file.getName(), e);
                     }
                 });
 
