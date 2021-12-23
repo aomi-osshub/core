@@ -222,6 +222,7 @@ public class VirtualFileServiceImpl implements VirtualFileService {
                 });
 
         virtualFileRepository.deleteAll(allSubFiles);
+        virtualFileRepository.deleteById(file.getId());
     }
 
 
