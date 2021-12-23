@@ -41,6 +41,14 @@ public interface VirtualFileService {
      */
     VirtualFile save(Client client, VirtualFile virtualFile, InputStream fileInputStream);
 
+    /**
+     * 文件移动
+     *
+     * @param client    客户端
+     * @param sourceIds 源文件
+     * @param targetId  目标文件夹
+     */
+    void move(Client client, List<String> sourceIds, String targetId);
 
     /**
      * 删除文件夹

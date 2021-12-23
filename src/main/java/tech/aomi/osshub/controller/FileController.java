@@ -13,6 +13,7 @@ import tech.aomi.osshub.common.exception.FileNonExistException;
 import tech.aomi.osshub.entity.StorageType;
 import tech.aomi.osshub.entity.VirtualFile;
 import tech.aomi.osshub.form.DirectoryCreateForm;
+import tech.aomi.osshub.form.FileMoveForm;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -117,6 +118,13 @@ public class FileController extends AbstractController {
         virtualFile = virtualFileService.save(client(), virtualFile, file.getInputStream());
 
         return success(virtualFile);
+    }
+
+    @PatchMapping
+    public Result move(@RequestBody @Valid FileMoveForm form) {
+        LOGGER.debug("文件移动: {}", form);
+        virtualFileService.move(client(), form.getSourceIds(), form.getTargetId());
+        return success();
     }
 
     @DeleteMapping

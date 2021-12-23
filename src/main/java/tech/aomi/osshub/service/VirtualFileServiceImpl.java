@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.BasicUpdate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
@@ -14,15 +15,13 @@ import org.springframework.util.Assert;
 import tech.aomi.common.exception.ServiceException;
 import tech.aomi.osshub.CoreProperties;
 import tech.aomi.osshub.api.VirtualFileService;
-import tech.aomi.osshub.common.exception.DirCreateException;
-import tech.aomi.osshub.common.exception.DirExistException;
-import tech.aomi.osshub.common.exception.DirNonExistException;
-import tech.aomi.osshub.common.exception.FileCreateException;
+import tech.aomi.osshub.common.exception.*;
 import tech.aomi.osshub.entity.Client;
 import tech.aomi.osshub.entity.FileSystemStorageParams;
 import tech.aomi.osshub.entity.StorageType;
 import tech.aomi.osshub.entity.VirtualFile;
 import tech.aomi.osshub.repositry.VirtualFileRepository;
+import tech.aomi.spring.data.mongo.repository.QueryBuilder;
 
 import java.io.File;
 import java.io.IOException;
@@ -163,6 +162,65 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         }
         virtualFile.setFullName(virtualFile.getDirectory() + ("/".equals(virtualFile.getDirectory()) ? "" : File.separator) + virtualFile.getName());
         return virtualFileRepository.save(virtualFile);
+    }
+
+    @Override
+    public void move(Client client, List<String> sourceIds, String targetId) {
+        VirtualFile targetFile = virtualFileRepository.findByClientIdAndId(client.getId(), targetId).orElseThrow(() -> new FileNonExistException("目标文件夹不存在"));
+        if (VirtualFile.Type.DIRECTORY != targetFile.getType()) {
+            LOGGER.error("目标文件不是一个目录: {}", targetId);
+            throw new FileNonExistException("目标文件夹不存在");
+        }
+
+        String newDirectory = targetFile.getDirectory() + "/" + targetFile.getName();
+
+        LOGGER.debug("开始移动文件到目标目录: {}", targetId);
+        Query fileQuery = QueryBuilder.builder()
+                .is("clientId", client.getId())
+                .in("id", sourceIds)
+                .is("type", VirtualFile.Type.FILE)
+                .build();
+
+        mongoTemplate.updateMulti(
+                fileQuery,
+                new Update()
+                        .set("directory", newDirectory),
+                VirtualFile.class
+        );
+        LOGGER.debug("开始移动文件夹到目标目录");
+        Query dirQuery = QueryBuilder.builder()
+                .is("clientId", client.getId())
+                .in("id", sourceIds)
+                .is("type", VirtualFile.Type.DIRECTORY)
+                .build();
+
+        List<VirtualFile> dirs = mongoTemplate.find(dirQuery, VirtualFile.class);
+        dirs.parallelStream().forEach(item -> {
+            String dir = item.getDirectory() + "/" + item.getName();
+
+            String updateStr = "[{" +
+                    "    $set: {" +
+                    "        directory: {" +
+                    "            $replaceAll: {" +
+                    "                input: \"$directory\"," +
+                    "                find: \"" + dir + "\"," +
+                    "                replacement: \"" + newDirectory + "\"" +
+                    "            }" +
+                    "        }" +
+                    "    }" +
+                    "}]";
+            LOGGER.debug("目录移动更新语句: {}", updateStr);
+            Query updateQuery = QueryBuilder.builder()
+                    .is("clientId", client.getId())
+                    .rightLike("directory", dir)
+                    .build();
+            BasicUpdate update = new BasicUpdate(updateStr);
+            mongoTemplate.updateMulti(
+                    updateQuery,
+                    update,
+                    VirtualFile.class
+            );
+        });
     }
 
     @Override
