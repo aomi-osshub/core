@@ -3,16 +3,17 @@ package tech.aomi.osshub.service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.BasicUpdate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import tech.aomi.common.exception.ServiceException;
+import tech.aomi.common.utils.MapBuilder;
 import tech.aomi.osshub.CoreProperties;
 import tech.aomi.osshub.api.VirtualFileService;
 import tech.aomi.osshub.common.exception.*;
@@ -28,9 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * @author Sean createAt 2021/10/21
@@ -65,52 +64,51 @@ public class VirtualFileServiceImpl implements VirtualFileService {
     }
 
     @Override
-    public VirtualFile createDirectory(Client client, String userId, String parent, String name) {
+    public VirtualFile createDirectory(Client client, String userId, String parentDir, String name) {
         Assert.notNull(client, "客户端不能为NULL");
         Assert.hasLength(name, "目录名不能为空");
-        LOGGER.debug("父目录: {}", parent);
+        LOGGER.debug("父目录: {}", parentDir);
 
-        StorageType storageType = client.getStorageType();
-        if (null == storageType) {
-            storageType = StorageType.FILE_SYSTEM;
-        }
-        parent = StringUtils.trimToEmpty(parent);
-        String parentDirectory = "/";
-        if (StringUtils.isNotEmpty(parent)) {
-            parentDirectory = parent;
-        }
-
-        Path parentPath = Paths.get(parentDirectory);
-
-        if (!"/".equals(parentDirectory) && !virtualFileRepository.existsByTypeAndClientIdAndUserIdAndDirectoryAndName(
-                VirtualFile.Type.DIRECTORY,
-                client.getId(),
-                userId,
-                parentPath.getParent().toString(),
-                parentPath.getFileName().toString()
-
-        )) {
-            throw new DirNonExistException("父目录不存在:" + parentDirectory);
+        String directory = StringUtils.trimToEmpty(parentDir);
+        String pId;
+        if ("".equals(directory) || "/".equals(directory)) {
+            directory = "/";
+            pId = "";
+        } else {
+            Path parentPath = Paths.get(directory);
+            VirtualFile parent = virtualFileRepository.findByClientIdAndDirectoryAndName(
+                    client.getId(),
+                    parentPath.getParent().toString(),
+                    parentPath.getFileName().toString()
+            ).orElseThrow(() -> new FileNonExistException("父目录不存在"));
+            pId = parent.getId();
         }
 
         if (virtualFileRepository.existsByTypeAndClientIdAndUserIdAndDirectoryAndName(
                 VirtualFile.Type.DIRECTORY,
                 client.getId(),
                 userId,
-                parentDirectory,
+                directory,
                 name
         )) {
             throw new DirExistException("目录已经存在: " + name);
         }
 
+
+        StorageType storageType = client.getStorageType();
+        if (null == storageType) {
+            storageType = StorageType.FILE_SYSTEM;
+        }
+
         VirtualFile virtualFile = new VirtualFile();
         virtualFile.setType(VirtualFile.Type.DIRECTORY);
-        virtualFile.setDirectory(parentDirectory);
+        virtualFile.setDirectory(directory);
+        virtualFile.setDirectoryId(pId);
         virtualFile.setName(name);
         virtualFile.setClientId(client.getId());
         virtualFile.setUserId(userId);
         virtualFile.setStorageType(storageType);
-        virtualFile.setFullName(parentDirectory + ("/".equals(parentDirectory) ? "" : File.separator) + name);
+        virtualFile.setCreateAt(new Date());
         return virtualFileRepository.save(virtualFile);
     }
 
@@ -124,21 +122,20 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         Assert.hasLength(virtualFile.getName(), "文件名不能为空");
 
         String directory = StringUtils.trimToEmpty(virtualFile.getDirectory());
-        if ("".equals(directory)) {
+        String pId;
+        if ("".equals(directory) || "/".equals(directory)) {
             directory = "/";
-        }
+            pId = "";
+        } else {
+            Path parentPath = Paths.get(directory);
+            VirtualFile parent = virtualFileRepository.findByClientIdAndDirectoryAndName(
+                    client.getId(),
+                    parentPath.getParent().toString(),
+                    parentPath.getFileName().toString()
+            ).orElseThrow(() -> new FileNonExistException("父目录不存在"));
 
-//        if (virtualFileRepository.existsByTypeAndClientIdAndUserIdAndDirectoryAndName(
-//                VirtualFile.Type.FILE,
-//                client.getId(),
-//                virtualFile.getUserId(),
-//                directory,
-//                virtualFile.getName()
-//        )) {
-//            FileExistException e = new FileExistException("文件已经存在: " + virtualFile.getName());
-//            e.setPayload(virtualFile.getName());
-//            throw e;
-//        }
+            pId = parent.getId();
+        }
 
         StorageType storageType = client.getStorageType();
         if (null == storageType) {
@@ -151,6 +148,7 @@ public class VirtualFileServiceImpl implements VirtualFileService {
         virtualFile.setClientId(client.getId());
 
         virtualFile.setDirectory(directory);
+        virtualFile.setDirectoryId(pId);
         virtualFile.setAccessSource(virtualFile.getId() + "/" + virtualFile.getName());
 
         switch (storageType) {
@@ -160,34 +158,19 @@ public class VirtualFileServiceImpl implements VirtualFileService {
             default:
                 throw new ServiceException("不支持的存储方式: " + storageType);
         }
-        virtualFile.setFullName(virtualFile.getDirectory() + ("/".equals(virtualFile.getDirectory()) ? "" : File.separator) + virtualFile.getName());
         return virtualFileRepository.save(virtualFile);
     }
 
     @Override
-    public void move(Client client, List<String> sourceIds, String targetId) {
-        VirtualFile targetFile = virtualFileRepository.findByClientIdAndId(client.getId(), targetId).orElseThrow(() -> new FileNonExistException("目标文件夹不存在"));
+    public void move(Client client, List<String> sourceIds, String targetDir) {
+        File file = new File(targetDir);
+
+        VirtualFile targetFile = virtualFileRepository.findByClientIdAndDirectoryAndName(client.getId(), file.getParent(), file.getName()).orElseThrow(() -> new FileNonExistException("目标文件夹不存在"));
         if (VirtualFile.Type.DIRECTORY != targetFile.getType()) {
-            LOGGER.error("目标文件不是一个目录: {}", targetId);
+            LOGGER.error("目标文件不是一个目录: {}", targetDir);
             throw new FileNonExistException("目标文件夹不存在");
         }
 
-        String newDirectory = targetFile.getDirectory() + "/" + targetFile.getName();
-
-        LOGGER.debug("开始移动文件到目标目录: {}", targetId);
-        Query fileQuery = QueryBuilder.builder()
-                .is("clientId", client.getId())
-                .in("id", sourceIds)
-                .is("type", VirtualFile.Type.FILE)
-                .build();
-
-        mongoTemplate.updateMulti(
-                fileQuery,
-                new Update()
-                        .set("directory", newDirectory),
-                VirtualFile.class
-        );
-        LOGGER.debug("开始移动文件夹到目标目录");
         Query dirQuery = QueryBuilder.builder()
                 .is("clientId", client.getId())
                 .in("id", sourceIds)
@@ -196,31 +179,56 @@ public class VirtualFileServiceImpl implements VirtualFileService {
 
         List<VirtualFile> dirs = mongoTemplate.find(dirQuery, VirtualFile.class);
         dirs.parallelStream().forEach(item -> {
-            String dir = item.getDirectory() + "/" + item.getName();
+            Path dirPath = item.getFullPath();
+            String dir = dirPath.toString();
+            LOGGER.debug("开始移动文件夹到目标目录: source={} target={}", dir, targetDir);
 
-            String updateStr = "[{" +
-                    "    $set: {" +
-                    "        directory: {" +
-                    "            $replaceAll: {" +
-                    "                input: \"$directory\"," +
-                    "                find: \"" + dir + "\"," +
-                    "                replacement: \"" + newDirectory + "\"" +
-                    "            }" +
-                    "        }" +
-                    "    }" +
-                    "}]";
-            LOGGER.debug("目录移动更新语句: {}", updateStr);
-            Query updateQuery = QueryBuilder.builder()
-                    .is("clientId", client.getId())
-                    .rightLike("directory", dir)
-                    .build();
-            BasicUpdate update = new BasicUpdate(updateStr);
-            mongoTemplate.updateMulti(
-                    updateQuery,
-                    update,
-                    VirtualFile.class
+            List<Document> u = new ArrayList<>();
+            u.add(new Document(MapBuilder.of(
+                    "$set", MapBuilder.of(
+                            "directory", MapBuilder.of(
+                                    "$replaceOne", MapBuilder.of(
+                                            "input", "$directory",
+                                            "find", dirPath.getParent().toString(),
+                                            "replacement", targetDir
+                                    )
+                            )
+                    )
+            )));
+
+            Document command = new Document();
+            command.append("update", mongoTemplate.getCollectionName(VirtualFile.class));
+            Map<String, Object> update = MapBuilder.of(
+                    "q", MapBuilder.of(
+                            "clientId", client.getId(),
+                            "directory", MapBuilder.of(
+                                    "$regex", dir + ".*"
+                            )
+                    ),
+                    "multi", true,
+                    "u", u
             );
+            List<Document> updates = new ArrayList<>();
+            updates.add(new Document(update));
+            command.append("updates", updates);
+            LOGGER.debug("目录移动更新语句: {}", command.toJson());
+            mongoTemplate.executeCommand(command);
         });
+
+        LOGGER.debug("开始移动文件目录到目标目录: {}", targetDir);
+        Query fileQuery = QueryBuilder.builder()
+                .is("clientId", client.getId())
+                .in("id", sourceIds)
+                .build();
+
+        mongoTemplate.updateMulti(
+                fileQuery,
+                new Update()
+                        .set("directory", targetDir)
+                        .set("directoryId", targetFile.getId())
+                ,
+                VirtualFile.class
+        );
     }
 
     @Override
@@ -266,7 +274,7 @@ public class VirtualFileServiceImpl implements VirtualFileService {
 
         List<VirtualFile> allSubFiles = virtualFileRepository.findByClientIdAndDirectoryIsStartingWith(
                 client.getId(),
-                file.getDirectory() + file.getName()
+                file.getFullName()
         );
 
         allSubFiles.parallelStream()

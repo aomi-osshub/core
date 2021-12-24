@@ -24,8 +24,8 @@ public class FileMoveForm {
     private List<String> sourceIds;
 
     /**
-     * 目标文件夹ID
+     * 目标文件夹
      */
     @NotEmpty
-    private String targetId;
+    private String targetDir;
 }

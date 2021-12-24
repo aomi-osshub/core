@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import tech.aomi.common.entity.LabelEntity;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.Map;
 
@@ -31,14 +33,14 @@ public class VirtualFile implements java.io.Serializable, LabelEntity {
     private String directory;
 
     /**
+     * 文件所在目录ID
+     */
+    private String directoryId;
+
+    /**
      * 文件名
      */
     private String name;
-
-    /**
-     * 完整文件名
-     */
-    private String fullName;
 
     /**
      * 文件大小
@@ -117,5 +119,11 @@ public class VirtualFile implements java.io.Serializable, LabelEntity {
         this.size = 0L;
     }
 
+    public String getFullName() {
+        return getFullPath().toString();
+    }
 
+    public Path getFullPath() {
+        return Paths.get(this.directory + "/" + this.getName());
+    }
 }

@@ -27,6 +27,8 @@ public interface VirtualFileRepository extends MongoRepository<VirtualFile, Stri
 
     Optional<VirtualFile> findByClientIdAndId(String clientId, String id);
 
+    Optional<VirtualFile> findByClientIdAndDirectoryAndName(String clientId, String directory, String name);
+
     List<VirtualFile> findByClientIdAndDirectory(String clientId, String directory);
 
     /**

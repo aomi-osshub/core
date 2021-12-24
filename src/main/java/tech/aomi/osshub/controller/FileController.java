@@ -123,7 +123,7 @@ public class FileController extends AbstractController {
     @PatchMapping
     public Result move(@RequestBody @Valid FileMoveForm form) {
         LOGGER.debug("文件移动: {}", form);
-        virtualFileService.move(client(), form.getSourceIds(), form.getTargetId());
+        virtualFileService.move(client(), form.getSourceIds(), form.getTargetDir());
         return success();
     }
 
